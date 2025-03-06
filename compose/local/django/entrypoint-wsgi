@@ -1,0 +1,29 @@
+echo "Applying database migrations..."
+python manage.py makemigrations --no-input
+python manage.py migrate --noinput
+python manage.py collectstatic --noinput
+
+echo "Creating superuser..."
+DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-"admin@example.com"}
+DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-"admin"}
+DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-"admin123"}
+
+python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+if not User.objects.filter(username="$DJANGO_SUPERUSER_USERNAME").exists():
+    User.objects.create_superuser("$DJANGO_SUPERUSER_USERNAME", "$DJANGO_SUPERUSER_EMAIL", "$DJANGO_SUPERUSER_PASSWORD")
+    print("Superuser created.")
+else:
+    print("Superuser already exists.")
+EOF
+
+gunicorn backendapp.wsgi:application --bind 0.0.0.0:8000 --reload
+start_gunicorn() {
+    extra_files=$(find /app -name "*.html" -exec echo "--reload-extra-file" {} \;)
+    echo "Starting Gunicorn in development mode..."
+    gunicorn backendapp.wsgi:application --bind 0.0.0.0:8000 --reload --reload-engine=poll $extra_files --access-logfile - --access-logformat '%(m)s [%(s)s] %(U)s?%(q)s -%(M)sms'
+}
+# Start Gunicorn
+start_gunicorn

@@ -1,0 +1,51 @@
+
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: ims-postgres
+    environment:
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=ims-local-postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./compose/local/postgres/01-initdb.sql:/docker-entrypoint-initdb.d/01-initdb.sql
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    networks:
+      - local
+
+
+  django:
+    build:
+        context: .
+        dockerfile: ./compose/local/django/Dockerfile
+        args:
+          ENV: local
+    container_name: ims-django
+    restart: unless-stopped
+    command: /entrypoint-wsgi
+    env_file:
+      - ./.env/django/.dev-sample
+    volumes:
+      - ./backend/:/app
+      - media_volume:/app/mediafiles/
+      - static_volume:/app/staticfiles
+    depends_on:
+      - postgres
+    ports:
+      - 8000:8000
+    networks:
+      - local
+
+volumes:
+  static_volume: 
+  media_volume:
+  postgres_data:
+
+networks:
+  local:

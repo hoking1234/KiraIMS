@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory List</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Inventory List</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Supplier Name</th>
+                    <th>Availability</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="inventory-table">
+            </tbody>
+        </table>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">Add New Inventory</button>
+    </div>
+
+    <div class="modal fade" id="addInventoryModal" tabindex="-1" aria-labelledby="addInventoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addInventoryModalLabel">Add Inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="inventory-form">
+                        <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Item Name</label>
+                            <input type="text" id="name" name="name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" id="description" name="description" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Note</label>
+                            <textarea id="note" name="note" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="stock" class="form-label">Stock</label>
+                            <input type="number" id="stock" name="stock" class="form-control" required min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="availability" class="form-label">Availability</label>
+                            <select id="availability" name="availability" class="form-control">
+                                <option value="true">Available</option>
+                                <option value="false">Not Available</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="supplier" class="form-label">Supplier</label>
+                            <select id="supplier" name="supplier" class="form-control" required>
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadInventory() {
+            let queryParams = window.location.search;
+            let response = await fetch(`/api/inventory/${queryParams}`);
+            let data = await response.json();
+            let table = document.getElementById("inventory-table");
+            table.innerHTML = "";
+            data.forEach(item => {
+                table.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.supplier.name}</td>
+                        <td>${item.availability ? "Yes" : "No"}</td>
+                        <td>
+                            <a href="/inventory/${item.id}/" class="btn btn-info btn-sm">View</a>
+                        </td>
+                    </tr>`;
+            });
+        }
+        //<button onclick="deleteItem(${item.id})" class="btn btn-danger btn-sm">Delete</button>
+
+        async function loadSuppliers() {
+            let queryParams = window.location.search;
+            let response = await fetch(`/api/supplier/${queryParams}`);
+            let data = await response.json();
+            let supplierSelect = document.getElementById("supplier");
+            supplierSelect.innerHTML = "<option value=''>Select Supplier</option>";
+            data.forEach(supplier => {
+                supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+            });
+        }
+
+        async function deleteItem(id) {
+            if (confirm("Are you sure?")) {
+                await fetch(`/api/inventory/${id}/`, { method: "DELETE" });
+                loadInventory();
+            }
+        }
+
+        document.getElementById("inventory-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            
+            const formData = {
+                name: document.getElementById("name").value,
+                description: document.getElementById("description").value,
+                note: document.getElementById("note").value,
+                stock: parseInt(document.getElementById("stock").value),
+                availability: document.getElementById("availability").value === "true",
+                supplier: parseInt(document.getElementById("supplier").value)
+            };
+            const csrfToken = document.getElementById("csrf-token").value;
+
+            let response = await fetch("/api/inventory/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                alert("Inventory added successfully!");
+                document.getElementById("inventory-form").reset();
+                loadInventory();
+                let modal = bootstrap.Modal.getInstance(document.getElementById('addInventoryModal'));
+                modal.hide();
+            } else {
+                alert("Failed to add inventory.");
+            }
+        });
+
+        loadInventory();
+        loadSuppliers();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

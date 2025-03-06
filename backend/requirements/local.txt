@@ -1,0 +1,7 @@
+-r tests.txt
+
+# django-debug-toolbar==3.8.1
+# ipython==7.25.0
+
+uvicorn[standard]==0.21.1
+websockets==11.0.2
