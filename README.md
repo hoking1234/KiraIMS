@@ -23,6 +23,7 @@ To Run:
 4. Go to 'http://localhost:8000/inventory/' in browser.
 
 Answer to requirements:
+
 a. to view model, simply access database in pgAdmin with details as:
     DATABASE=postgres
     DB_PASSWORD=123456
