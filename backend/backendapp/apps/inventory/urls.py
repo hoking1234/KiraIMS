@@ -7,11 +7,12 @@ from .views import inventory_detail, inventory_list, supplier_list
 app_name = "inventory"
 
 router = DefaultRouter()
-router.register(r"api/inventory", InventoryViewSet, basename="inventory_api")
-router.register(r"api/supplier", SupplierViewSet, basename="supplier_api")
+router.register(r"inventory", InventoryViewSet, basename="inventory_api")
+router.register(r"supplier", SupplierViewSet, basename="supplier_api")
 
 urlpatterns = [
-    path("", include(router.urls)),
+    path("api/", include(router.urls)),
+    path("", inventory_list, name="inventory_list"),
     path("inventory/", inventory_list, name="inventory_list"),
     path("inventory/<int:id>/", inventory_detail, name="inventory_detail"),
     path("supplier/", supplier_list, name="inventory_list"),
